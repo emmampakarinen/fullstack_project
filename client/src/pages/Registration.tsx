@@ -1,7 +1,7 @@
 import { ReactElement } from 'react'
 import { Box, TextField, Button, Typography, Alert } from '@mui/material'
 import { useState } from 'react'
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface RegistrationForm { 
   firstName: string,
@@ -12,7 +12,6 @@ interface RegistrationForm {
 
 // Reference for this https://dev.to/luqmanshaban/creating-a-sign-up-form-in-react-with-typescript-2jb3 
 const Registration = (): ReactElement => {
-  
   const [formData, setFormData] = useState<RegistrationForm> ({
     firstName: '', 
     lastName: '',
@@ -20,6 +19,7 @@ const Registration = (): ReactElement => {
     password: ''
   })
 
+  const navigate = useNavigate()
   const [registerError, setRegisterError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
@@ -35,9 +35,39 @@ const Registration = (): ReactElement => {
       setRegisterError('Email and password are required.');
       return;
     }
-    
-    setRegisterError(null);
 
+    fetch("/users/register", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({
+        "firstname": formData.firstName,
+        "lastname": formData.lastName,
+        "email": formData.email,
+        "password": formData.password
+      }), 
+      mode: "cors"
+    }).then(async response => {
+      if (!response.ok) {
+        const err = await response.json()
+        throw err
+      }
+
+      return response.json()
+    }).then( data => {
+      navigate("/login")
+    }).catch(error => {
+      if (error.errors) {
+        setRegisterError(error.errors[0].msg) 
+      } else {
+        console.log(error) // if error is something else than related to insufficient credentials
+        if(error.msg) { // if the e-mail was already in use
+          setRegisterError(error.msg)
+        }
+      }
+    })
+    setRegisterError(null);
   }
 
   return (
@@ -51,7 +81,7 @@ const Registration = (): ReactElement => {
             <Button variant='contained' type='submit' onClick={()=> handleRegister()}>Submit</Button>
           </Box>
           {registerError && <Alert severity="error" >{registerError}</Alert>}
-          <Box mt={5}>
+          <Box mt={5} display="flex" flexDirection="column" alignItems="center">
               <Typography>{"Already registered?"}</Typography>
               <Button variant="outlined" component={Link} to="/Login">Login</Button> 
           </Box>

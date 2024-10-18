@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
@@ -6,8 +8,19 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
+var mongoose = require('mongoose');
+const mongoDBURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/fs';
+
 var app = express();
 
+mongoose.connect(mongoDBURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }).then(() => console.log('Connected to MongoDB'))
+    .catch((error) => console.log('Error connecting to MongoDB:', error));
+
+const cors = require('cors');
+app.use(cors());   
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
